@@ -81,6 +81,7 @@ $
 You can see all the process inside the pipe has been killed.
 * * *
 Notice
+
 When use sh (not bash), you can not use **-$PID** to get the group id of this pipe.
 ```sh
 $ sh
