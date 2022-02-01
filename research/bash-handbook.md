@@ -33,7 +33,6 @@ $ ps
   83360 pts/4    00:00:00 tee
   83361 pts/4    00:00:00 grep
   83366 pts/4    00:00:00 ps
-$ 
 ```
 
 When using **kill $PID**, only the last process (which is one of the grep) in the pipe has been killed. The other processes are still running.
