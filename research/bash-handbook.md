@@ -36,7 +36,9 @@ $ ps
 ```
 
 When using **kill $PID**, only the last process (which is one of the grep) in the pipe has been killed. The other processes are still running.
+
 So how to do it?
+
 In bash programming, the pipe arranged as a [Job](http://mywiki.wooledge.org/BashGuide/JobControl), which is implemented as "process group".
 
 In order to kill this pipe, you need to kill the process group.
