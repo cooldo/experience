@@ -40,11 +40,8 @@ When using **kill $PID**, only the last process (which is one of the grep) in th
 So how to do it?
 
 In bash programming, the pipe arranged as a [Job](http://mywiki.wooledge.org/BashGuide/JobControl), which is implemented as "process group".
-
 In order to kill this pipe, you need to kill the process group.
-
 First, you need to enable Job control in your script with **set -m** or **set -o monitor**.
-
 In the terminal, the **set -m** option has already been set.
 
 ```bash
@@ -86,7 +83,6 @@ $
 You can see all the process inside the pipe has been killed.
 * * *
 Notice
-
 When use sh (not bash), you can not use **-$PID** to get the group id of this pipe.
 ```sh
 $ sh
