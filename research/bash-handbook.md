@@ -16,45 +16,94 @@ You cannot just use *kill $PID* to kill this pipe.
 
 ```bash
 $ tail -f test.log | tee | grep foo | grep bar & PID=$!
-[1] 83362
+[1] 101703
 $ ps
     PID TTY          TIME CMD
-  81172 pts/4    00:00:00 bash
-  83359 pts/4    00:00:00 tail
-  83360 pts/4    00:00:00 tee
-  83361 pts/4    00:00:00 grep
-  83362 pts/4    00:00:00 grep
-  83363 pts/4    00:00:00 ps
+ 101578 pts/7    00:00:00 bash
+ 101700 pts/7    00:00:00 tail
+ 101701 pts/7    00:00:00 tee
+ 101702 pts/7    00:00:00 grep
+ 101703 pts/7    00:00:00 grep
+ 101705 pts/7    00:00:00 ps
 $ kill $PID
 $ ps
     PID TTY          TIME CMD
-  81172 pts/4    00:00:00 bash
-  83359 pts/4    00:00:00 tail
-  83360 pts/4    00:00:00 tee
-  83361 pts/4    00:00:00 grep
-  83366 pts/4    00:00:00 ps
+ 101578 pts/7    00:00:00 bash
+ 101700 pts/7    00:00:00 tail
+ 101701 pts/7    00:00:00 tee
+ 101702 pts/7    00:00:00 grep
+ 101706 pts/7    00:00:00 ps
 ```
 
 When using **kill $PID**, only the last process (which is one of the grep) in the pipe has been killed. The other processes are still running.
 
 So how to do it?
 
-In bash programming, the pipe is arranged as a [Job](http://mywiki.wooledge.org/BashGuide/JobControl), which is implemented as "process group".
+The first way is that all the subprocesses in the pipe belong to the same PGID(process group id), if you kill the PGID, then you can kill the pipe.
 
-In order to kill this pipe, you need to kill the process group with PGID(process group id)
+```bash
+$ ps -o pid,ppid,pgid,comm
+    PID    PPID    PGID COMMAND
+ 101578    3240  101578 bash
+ 101700  101578  101700 tail
+ 101701  101578  101700 tee
+ 101702  101578  101700 grep
+ 101713  101578  101713 ps
+```
+
+Shell command **kill** can kill the PGID.
 
 ```bash
 $ tail -f test.log | tee | grep foo | grep bar & PID=$!
-$ PGID=$(ps -o pgid= $PID | grep -o [0-9]*)
-$ kill -- -$PGID # don't forget to prefix with a -
+$ PGID=$(ps -o pgid= $PID | grep -o [0-9]*) # get the pgid
+$ kill -- -$PGID # kill the pgid
 ```
 
-* * *
-You can also kill a pipe only by **PID** in bash.
+Nevertheless, you should not expect to get the PGID by log filter, it is not safe for different Unix system with different log format.
+
+The above soution also has its drawback. When you put 2 background pipes in one script, they belong to the a same PGID, when you kill the PGID,  all the 2 pipes are killed.
+
 ```bash
+#!/usr/bin/env bash
+tail -f test.log | tee | grep foo | grep bar & PIPE1=$!
+PGID1=$(ps -o pgid= $PIPE1 | grep -o [0-9]*)
+tail -f test.log | tee | grep foo | grep bar & PIPE2=$!
+PGID2=$(ps -o pgid= $PIPE2 | grep -o [0-9]*)
+kill -- -$PGID1 # PGID1 and PGID2 are the same
+```
+
+
+The good way is to put the pipe inside a [command group](http://mywiki.wooledge.org/BashGuide/CompoundCommands#Command_grouping) , and we can get the parent pid of this command group. 
+
+Shell command **pkill** proivdes a way to kill all the child process by its parent pid.
+
+```bash
+$ { tail -f test.log | tee | grep foo | grep bar ;} & PID=$!
+$ pkill -P $PID
+```
+
+
+
+
+* * *
+When you enable [Job control](http://mywiki.wooledge.org/BashGuide/JobControl) in bash, you can use PGID to kill pipes, because the PGID of each pipe will be different.
+
+```bash
+#!/usr/bin/env bash
+set -m # enable Job Control, use set -o to check 
+tail -f test.log | tee | grep foo | grep bar & PIPE1=$!
+PGID1=$(ps -o pgid= $PIPE1 | grep -o [0-9]*)
+tail -f test.log | tee | grep foo | grep bar & PIPE2=$!
+PGID2=$(ps -o pgid= $PIPE2 | grep -o [0-9]*)
+kill -- -$PGID1 # PGID1 and PGID2 are the different, so only kill pipe1
+```
+
+You can also kill a pipe only by it's subprocess's pid by using job control.
+Here I only use subprocess's pid to kill the pipe. I guess the reason is in job control 
+mode,  bash would help you to find the PGID by PID, thus makes **kill** work.
+```bash 
 $ set -m # set Job control enabled, you can use set -o to check
 $ tail -f test.log | tee | grep foo | grep bar & PID=$!
 $ kill -- -$PID
 ```
-Here I only use PID to kill the whole process group. I guess the reason is in job control mode,  bash would help you to find the PGID by PID, thus makes **kill** work.
 * * *
