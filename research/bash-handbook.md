@@ -1,12 +1,12 @@
 # How to kill a pipe ?
 
-In bash programing, sometimes you start a pipe in the background as below and you want to kill this pipe when some conditions met.
+In bash monogramming, sometimes you start a pipe in the background as below and you want to kill this pipe when some conditions met.
 
 ```bash
 tail -f test.log | tee | grep foo | grep bar &
 ```
 
-You can only get the PID of the last subprocess, like below.
+You can only get the PID of the last sub-process, like below.
 
 ```bash
 tail -f test.log | tee | grep foo | grep bar & PID=$!
@@ -39,7 +39,7 @@ When using **kill $PID**, only the last process (which is one of the grep) in th
 
 So how to do it?
 
-The first way is that all the subprocesses in the pipe belong to the same PGID(process group id), if you kill the PGID, then you can kill the pipe.
+The first way is that all the sub-processes in the pipe belong to the same PGID(process group id), if you kill the PGID, then you can kill the pipe.
 
 ```bash
 $ ps -o pid,ppid,pgid,comm
@@ -61,7 +61,7 @@ $ kill -- -$PGID # kill the pgid
 
 Nevertheless, you should not expect to get the PGID by log filter, it is not safe for different Unix system with different log format.
 
-The above soution also has its drawback. When you put 2 background pipes in one script, they belong to the a same PGID, when you kill the PGID,  all the 2 pipes are killed.
+The above solution also has its drawback. When you put 2 background pipes in one script, they belong to the a same PGID, when you kill the PGID,  all the 2 pipes are killed.
 
 ```bash
 #!/usr/bin/env bash
@@ -72,20 +72,17 @@ PGID2=$(ps -o pgid= $PIPE2 | grep -o [0-9]*)
 kill -- -$PGID1 # PGID1 and PGID2 are the same
 ```
 
+The good way is to put the pipe inside a [command group](http://mywiki.wooledge.org/BashGuide/CompoundCommands#Command_grouping) , and we can get the parent pid of this command group.
 
-The good way is to put the pipe inside a [command group](http://mywiki.wooledge.org/BashGuide/CompoundCommands#Command_grouping) , and we can get the parent pid of this command group. 
-
-Shell command **pkill** proivdes a way to kill all the child process by its parent pid.
+Shell command **pkill** provides a way to kill all the child process by its parent pid.
 
 ```bash
 $ { tail -f test.log | tee | grep foo | grep bar ;} & PID=$!
 $ pkill -P $PID
 ```
 
-
-
-
 * * *
+
 When you enable [Job control](http://mywiki.wooledge.org/BashGuide/JobControl) in bash, you can use PGID to kill pipes, because the PGID of each pipe will be different.
 
 ```bash
@@ -98,12 +95,14 @@ PGID2=$(ps -o pgid= $PIPE2 | grep -o [0-9]*)
 kill -- -$PGID1 # PGID1 and PGID2 are the different, so only kill pipe1
 ```
 
-You can also kill a pipe only by it's subprocess's pid by using job control.
-Here I only use subprocess's pid to kill the pipe. I guess the reason is in job control 
-mode,  bash would help you to find the PGID by PID, thus makes **kill** work.
-```bash 
+You can also kill a pipe only by it's sub-process's pid by using job control.
+Here I only use sub-process's pid to kill the pipe. I guess the reason is in job control
+mode, bash would help you to find the PGID by PID, thus makes **kill** work.
+
+```bash
 $ set -m # set Job control enabled, you can use set -o to check
 $ tail -f test.log | tee | grep foo | grep bar & PID=$!
 $ kill -- -$PID
 ```
+
 * * *
