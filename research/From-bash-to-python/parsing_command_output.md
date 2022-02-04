@@ -6,6 +6,9 @@ command | grep -E "foo|bar"
 ```
 If parsing is complicated, you may use a named pipe.
 
+In the following case, command **top** generates output periodically, I redirect its output to a pipe.
+In another side, use **tail** to receive data from the pipe, and parsing the data in the while loop.
+
 ```bash
 #!/usr/bin/env bash
 trap 'rm -f pipe' EXIT
