@@ -1,5 +1,3 @@
-# How to kill a pipe ?
-
 In bash monogramming, sometimes you start a pipe in the background as below and you want to kill this pipe when some conditions met.
 
 ```bash
@@ -81,8 +79,15 @@ $ { tail -f test.log | tee | grep foo | grep bar ;} & PID=$!
 $ pkill -P $PID
 ```
 
-* * *
+Or put the pipe in a subshell.
+```bash
+$ ( tail -f test.log | tee | grep foo | grep bar ) & PID=$!
+$ pkill -P $PID
+```
 
+
+
+* * *
 When you enable [Job control](http://mywiki.wooledge.org/BashGuide/JobControl) in bash, you can use PGID to kill pipes, because the PGID of each pipe will be different.
 
 ```bash
