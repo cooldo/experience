@@ -1,13 +1,13 @@
-- Create a pipe, wait for 5 seconds, and kill the pipe.
+## Create a pipe, wait for 5 seconds, and kill the pipe.
 
 Bash implemetation is below. 
 ```bash
 #!/usr/bin/env bash
 file_name="/tmp/foo.log"
 touch "$file_name"
-{tail -f "$file_name" | grep bar ;} & PPID=$!
+{ tail -f "$file_name" | grep bar ;} & P_PID=$!
 sleep 5
-pkill -P $PPID # kill the process including its children
+pkill -P $P_PID # kill the process including its children
 wait
 ```
 
