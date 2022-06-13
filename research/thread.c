@@ -1,8 +1,9 @@
-#
-# to Run:
-#  gcc thread.c -lpthread; sleep 1; ./a.out
-# to check sched policy
-#  ps -eo state,uid,pid,ppid,rtprio,time,policy,comm
+//
+// to Run:
+//  gcc thread.c -lpthread; sleep 1; ./a.out
+// to check sched policy
+//  ps -xH -o state,uid,pid,ppid,rtprio,time,policy,pri,comm
+//  Only non-rt thread can use nice value to change priority
 
 #include <string.h>
 #include <pthread.h>
@@ -11,6 +12,12 @@
 
 void *child_thread(void *arg)
 {
+        while(1);
+}
+
+int main(int argc,char *argv[ ])
+{
+        pthread_t child_thread_id;
         int policy = 0;
         int max_priority = 0,min_priority = 0;
         struct sched_param param;
@@ -31,7 +38,6 @@ void *child_thread(void *arg)
         }
 
         pthread_attr_setschedpolicy(&attr,SCHED_FIFO);
-        //pthread_attr_setschedpolicy(&attr,SCHED_OTHER);
         pthread_attr_getschedpolicy(&attr,&policy);
 
         if(policy == SCHED_FIFO){
@@ -43,26 +49,17 @@ void *child_thread(void *arg)
         if(policy == SCHED_OTHER){
                 printf("Schedpolicy:SCHED_OTHER\n");
         }
-
         max_priority = sched_get_priority_max(policy);
         min_priority = sched_get_priority_min(policy);
         printf("Maxpriority:%u\n",max_priority);
         printf("Minpriority:%u\n",min_priority);
-
-        //param.sched_priority = max_priority;
         param.sched_priority = 1;
         pthread_attr_setschedparam(&attr,&param);
-
         printf("sched_priority:%u\n",param.sched_priority);
-        while(1);
-        pthread_attr_destroy(&attr);
-}
 
-int main(int argc,char *argv[ ])
-{
-        pthread_t child_thread_id;
-        pthread_create(&child_thread_id,NULL,child_thread,NULL);
+        pthread_create(&child_thread_id,&attr,child_thread,NULL);
         pthread_join(child_thread_id,NULL);
+        pthread_attr_destroy(&attr);
 
         return 0;
 }
